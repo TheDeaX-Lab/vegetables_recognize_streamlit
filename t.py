@@ -110,4 +110,5 @@ if uploaded_file is not None:
             'Овощ': class_labels,
             'Вероятность': probs
         }).sort_values('Вероятность', ascending=False).reset_index(drop=True)
+        prob_df['Овощ'] = pd.Categorical(prob_df['Овощ'], categories=prob_df['Овощ'], ordered=True)
         st.bar_chart(prob_df.set_index('Овощ'))
