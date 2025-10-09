@@ -79,19 +79,28 @@ def predict_image(image_array: np.ndarray, model) -> tuple:
 st.title("🥦 Классификация овощей")
 st.write("Загрузите изображение овоща, чтобы определить его вид.")
 
-# Загрузка изображения
-uploaded_file = st.file_uploader("Выберите изображение...", type=["jpg", "jpeg", "png"])
+SUPPORTED_IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "bmp", "tiff", "tif", "webp", "jfif"]
 
-if uploaded_file is not None:
-    # Преобразуем в массив с помощью OpenCV
-    file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
-    image = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)  # BGR формат
+uploaded_files = st.file_uploader(
+    "Выберите одно или несколько изображений...",
+    type=SUPPORTED_IMAGE_EXTENSIONS,
+    accept_multiple_files=True
+)
 
-    if image is None:
-        st.error("Не удалось загрузить изображение. Попробуйте другой файл.")
-    else:
-        # Показываем изображение
-        st.image(image, channels="BGR", caption="Загруженное изображение", use_column_width=True)
+if uploaded_files:
+    for uploaded_file in uploaded_files:
+        st.markdown(f"### 📄 Файл: `{uploaded_file.name}`")
+        
+        # Чтение байтов
+        file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
+        image = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)  # BGR формат
+
+        if image is None:
+            st.error(f"Не удалось загрузить изображение `{uploaded_file.name}`. Возможно, файл повреждён или не является изображением.")
+            continue
+
+        # Отображаем изображение
+        st.image(image, channels="BGR", caption=f"Загружено: {uploaded_file.name}", use_column_width=True)
 
         # Делаем предсказание
         with st.spinner("Анализируем изображение..."):
@@ -99,7 +108,7 @@ if uploaded_file is not None:
             label, confidence, probs = predict_image(image, model)
             elapsed_time = time.time() - start_time
 
-        # Выводим результат
+        # Вывод результата
         st.info(f"**Время прогноза**: {elapsed_time:.2f} секунд")
         st.success(f"**Овощ:** {label}")
         st.info(f"**Уверенность модели:** {confidence:.4f}")
@@ -112,3 +121,5 @@ if uploaded_file is not None:
         }).sort_values('Вероятность', ascending=False).reset_index(drop=True)
         prob_df['Овощ'] = pd.Categorical(prob_df['Овощ'], categories=prob_df['Овощ'], ordered=True)
         st.bar_chart(prob_df.set_index('Овощ'))
+
+        st.markdown("---")  # Разделитель между изображениями
