@@ -3,22 +3,57 @@ import cv2
 import streamlit as st
 import pandas as pd
 import time
-
 import torch
 from torchvision import transforms, models
 import torch.nn as nn
 
+# Настройки
 num_classes = 15
-model = models.resnet18(pretrained=False)
-model.fc = nn.Sequential(
-    nn.Linear(512, 256),
-    nn.ReLU(),
-    nn.BatchNorm1d(256),
-    nn.Dropout(0.5),
-    nn.Linear(256, num_classes)
+device = torch.device('cpu')  # или 'cuda' если есть GPU
+
+# Инициализация модели ResNet18 с нужной архитектурой головы
+def create_model():
+    model = models.resnet18(pretrained=False)
+    model.fc = nn.Sequential(
+        nn.Linear(512, 256),
+        nn.ReLU(),
+        nn.BatchNorm1d(256),
+        nn.Dropout(0.5),
+        nn.Linear(256, num_classes)
+    )
+    return model
+
+# Загрузка модели по пути
+def load_model(model_path):
+    model = create_model()
+    model.load_state_dict(torch.load(model_path, map_location=device))
+    model.eval()
+    return model
+
+# Streamlit UI
+st.title("Классификация овощей")
+model_choice = st.radio(
+    "Выберите модель для классификации:",
+    ("Старая модель (vegetables_cnn.pth)", "Новая модель (vegetables_cnn_epoch20.pth)"),
+    index=1  # по умолчанию выбрана новая модель
 )
-model.load_state_dict(torch.load('vegetables_cnn_epoch20.pth', map_location=torch.device('cpu')))  # или 'cuda'
-model.eval()
+
+# Загружаем выбранную модель
+if model_choice == "Старая модель (vegetables_cnn.pth)":
+    model_path = "vegetables_cnn.pth"
+else:
+    model_path = "vegetables_cnn_epoch20.pth"
+
+@st.cache_resource  # кэшируем модель, чтобы не перезагружать при каждом взаимодействии
+def get_model(path):
+    return load_model(path)
+
+try:
+    model = get_model(model_path)
+    st.success(f"Модель '{model_path}' успешно загружена!")
+except Exception as e:
+    st.error(f"Ошибка при загрузке модели: {e}")
+    st.stop()
 
 # Загружаем все модели при первом запуске (опционально — можно загружать по требованию)
 # Но лучше загружать по требованию, чтобы не тратить память
