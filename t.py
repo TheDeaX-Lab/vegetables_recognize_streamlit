@@ -17,7 +17,7 @@ model.fc = nn.Sequential(
     nn.Dropout(0.5),
     nn.Linear(256, num_classes)
 )
-model.load_state_dict(torch.load('vegetables_cnn.pth', map_location=torch.device('cpu')))  # или 'cuda'
+model.load_state_dict(torch.load('vegetables_cnn_epoch20.pth', map_location=torch.device('cpu')))  # или 'cuda'
 model.eval()
 
 # Загружаем все модели при первом запуске (опционально — можно загружать по требованию)
